@@ -9,12 +9,23 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(express.static(path.join(process.cwd(), 'src/public')));
+// Serve React compiled files in production, fallback to legacy public dashboard
+const frontendDistPath = path.join(process.cwd(), 'frontend/dist');
+const legacyPublicPath = path.join(process.cwd(), 'src/public');
+
+app.use(express.static(frontendDistPath));
+app.use(express.static(legacyPublicPath));
 
 app.use('/api', apiRoutes);
 
 app.get('*', (_req: Request, res: Response) => {
-  res.sendFile(path.join(process.cwd(), 'src/public', 'index.html'));
+  const fs = require('fs');
+  const reactIndex = path.join(frontendDistPath, 'index.html');
+  if (fs.existsSync(reactIndex)) {
+    res.sendFile(reactIndex);
+  } else {
+    res.sendFile(path.join(legacyPublicPath, 'index.html'));
+  }
 });
 
 // Error handling middleware
